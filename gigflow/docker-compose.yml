@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: gigflow-mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - gigflow-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: gigflow-server
+    ports:
+      - '5000:5000'
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/gigflow
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=7d
+      - NODE_ENV=production
+      - CLIENT_URL=http://localhost:3000
+    depends_on:
+      - mongodb
+    networks:
+      - gigflow-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: gigflow-client
+    ports:
+      - '3000:80'
+    depends_on:
+      - server
+    networks:
+      - gigflow-network
+
+volumes:
+  mongo_data:
+
+networks:
+  gigflow-network:
+    driver: bridge
